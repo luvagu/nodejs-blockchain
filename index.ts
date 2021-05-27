@@ -13,8 +13,10 @@ class Transaction {
 }
 
 class Block {
+  public nonce = Math.round(Math.random() * 999999999)
+
   constructor(
-    public prevHash: string,
+    public prevHash: string | null,
     public transaction: Transaction,
     public ts = Date.now()
   ) {}
@@ -39,6 +41,26 @@ class Chain {
 
   get lastBlock() {
     return this.chain[this.chain.length - 1]
+  }
+
+  mine(nonce: number) {
+    let solution = 1
+    console.log('⛏️ mining...')
+
+    while(true) {
+      const hash = crypto.createHash('MD5')
+      hash.update((nonce + solution).toString()).end()
+
+      const attempt = hash.digest('hex')
+
+      if (attempt.substr(0, 4) === '0000') {
+        console.log(`Solved: ${solution}`)
+        return solution        
+      }
+
+      solution++
+    }
+    
   }
 
   addBlock(transaction: Transaction, senderPublicKey: string, signature: Buffer) {
@@ -82,3 +104,15 @@ class Wallet {
     Chain.instance.addBlock(transaction, this.publickKey, signature)
   }
 }
+
+// Example usage
+
+const bob = new Wallet()
+const alice = new Wallet()
+const pepe = new Wallet()
+
+bob.sendMoney(100, bob.publickKey)
+alice.sendMoney(20, bob.publickKey)
+pepe.sendMoney(45, bob.publickKey)
+
+console.log(Chain.instance)
