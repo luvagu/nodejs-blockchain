@@ -41,10 +41,44 @@ class Chain {
     return this.chain[this.chain.length - 1]
   }
 
-  addBlock(transaction: Transaction, senderPublicKey: string, signature: string) {
-    const newBlock = new Block(this.lastBlock.hash, transaction)
-    this.chain.push(newBlock)
+  addBlock(transaction: Transaction, senderPublicKey: string, signature: Buffer) {
+    const verifier = crypto.createVerify('SHA256')
+    verifier.update(transaction.toString())
+
+    const isValid = verifier.verify(senderPublicKey, signature)
+
+    if (isValid) {
+      const newBlock = new Block(this.lastBlock.hash, transaction)
+      this.mine(newBlock.nonce)
+      this.chain.push(newBlock)
+    }
+    
   }
 }
 
+class Wallet {
+  public publickKey: string // for sending money
+  public privateKey: string // for receiving money
 
+  constructor() {
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    })
+
+    this.privateKey = keypair.privateKey
+    this.publickKey = keypair.publicKey
+  }
+
+  sendMoney(amount: number, payeePublicKey: string) {
+    const transaction = new Transaction(amount, this.publickKey, payeePublicKey)
+
+    const sign = crypto.createSign('SHA256')
+    sign.update(transaction.toString()).end()
+
+    const signature = sign.sign(this.privateKey)
+
+    Chain.instance.addBlock(transaction, this.publickKey, signature)
+  }
+}
