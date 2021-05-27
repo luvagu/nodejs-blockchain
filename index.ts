@@ -28,3 +28,23 @@ class Block {
   }
 }
 
+class Chain {
+  public static instance = new Chain()
+
+  chain: Block[]
+
+  constructor() {
+    this.chain = [new Block(null, new Transaction(100, 'genesis', 'satoshi'))]
+  }
+
+  get lastBlock() {
+    return this.chain[this.chain.length - 1]
+  }
+
+  addBlock(transaction: Transaction, senderPublicKey: string, signature: string) {
+    const newBlock = new Block(this.lastBlock.hash, transaction)
+    this.chain.push(newBlock)
+  }
+}
+
+
